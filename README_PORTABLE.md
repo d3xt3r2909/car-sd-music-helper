@@ -36,6 +36,12 @@ cd ~/Desktop/nova
 ./install_nova_helper.sh
 ```
 
+Or double-click this file after copying/downloading the full project:
+
+```text
+install_nova_helper.command
+```
+
 If dependencies are missing:
 
 ```bash
@@ -91,6 +97,8 @@ https://your-page.example/song_links.html?helper=http://127.0.0.1:8765
 
 The page stores that helper URL in browser localStorage.
 
+The hosted page has a `First setup on this Mac` panel. It can check whether the helper is running and copy the install commands, but it cannot install the helper directly from the browser.
+
 ## Chrome Extension
 
 The extension is included in this folder/repository:
@@ -125,6 +133,7 @@ song_links.html
 link_helper_server.py
 song_search_links.example.txt
 install_nova_helper.sh
+install_nova_helper.command
 add-to-songs-extension/
 README.md
 README_PORTABLE.md

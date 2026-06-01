@@ -68,6 +68,12 @@ cd ~/Desktop/nova
 ./install_nova_helper.sh
 ```
 
+You can also double-click this file from Finder after cloning/downloading the full project:
+
+```text
+install_nova_helper.command
+```
+
 Verify:
 
 ```bash
@@ -130,6 +136,8 @@ https://your-site.example/song_links.html?helper=http://127.0.0.1:8765
 ```
 
 The page stores the helper URL in browser localStorage.
+
+The hosted page includes a setup panel with helper status, copyable setup commands, and project download links. It can check `http://127.0.0.1:8765`, but it cannot install the helper by itself because browsers cannot write LaunchAgents or access the local filesystem.
 
 ## Chrome Extension
 

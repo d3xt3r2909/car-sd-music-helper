@@ -48,6 +48,9 @@ select { border: 1px solid var(--line); border-radius: 8px; background: var(--ca
 .status { min-height: 18px; color: var(--muted); font-size: 13px; }
 .download-log { margin: 10px 0 0; max-height: 260px; overflow: auto; white-space: pre-wrap; border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: color-mix(in srgb, var(--card) 72%, var(--bg)); font-size: 12px; }
 code { overflow-wrap: anywhere; }
+pre.setup-command { margin: 10px 0; white-space: pre-wrap; border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: color-mix(in srgb, var(--card) 72%, var(--bg)); font-size: 13px; overflow: auto; }
+.ok { color: var(--accent); }
+.warn { color: #b45309; }
 .hidden { display: none !important; }
 </style>
 </head>
@@ -64,6 +67,25 @@ code { overflow-wrap: anywhere; }
     <button id="load-recommendations">Refresh Songs</button>
   </div>
 </header>
+<section id="setup-panel" class="manager">
+  <details class="manager-panel" open>
+    <summary class="folder-summary">First setup on this Mac <span id="helper-status" class="meta">checking helper...</span></summary>
+    <div class="manager-tools">
+      <button id="check-helper" class="primary">Check helper</button>
+      <button id="copy-setup-commands">Copy setup commands</button>
+      <a class="button" href="https://github.com/d3xt3r2909/car-sd-music-helper/archive/refs/heads/main.zip">Download project ZIP</a>
+      <a class="button" href="./install_nova_helper.command" download>Download installer wrapper</a>
+      <a class="button" href="https://github.com/d3xt3r2909/car-sd-music-helper" target="_blank" rel="noopener">GitHub repo</a>
+    </div>
+    <div class="status">
+      The web page cannot install the local helper by itself. Run this once on the Mac that has the SD card.
+    </div>
+    <pre id="setup-commands" class="setup-command"></pre>
+    <div class="status">
+      If the SD card is not named <code>Untitled</code>, edit <code>~/Desktop/nova/nova_helper_config.json</code> and change <code>sd_card</code>.
+    </div>
+  </details>
+</section>
 <section id="library-manager" class="manager">
   <div class="manager-grid">
     <div class="manager-panel">
@@ -143,6 +165,11 @@ const key = 'nova-song-links-done-v2';
 const helperParam = new URLSearchParams(window.location.search).get('helper');
 if (helperParam) localStorage.setItem('nova-helper-base', helperParam);
 const helperBase = helperParam || localStorage.getItem('nova-helper-base') || 'http://127.0.0.1:8765';
+const setupCommands = `brew install yt-dlp ffmpeg deno
+cd ~/Desktop
+git clone https://github.com/d3xt3r2909/car-sd-music-helper.git nova
+cd ~/Desktop/nova
+./install_nova_helper.sh`;
 let libraryData = null;
 let serverDoneSignature = '';
 let downloadedData = null;
@@ -181,6 +208,22 @@ function formatBytes(bytes){
 function setStatus(id, text){
   const el = document.getElementById(id);
   if (el) el.textContent = text;
+}
+async function checkHelperStatus(){
+  const status = document.getElementById('helper-status');
+  status.classList.remove('ok', 'warn');
+  status.textContent = 'checking helper...';
+  const health = await helperGet('/health');
+  if (health !== 'ok') {
+    status.classList.add('warn');
+    status.textContent = `local helper is not running at ${helperBase}`;
+    return false;
+  }
+
+  const config = await helperGet('/config');
+  status.classList.add('ok');
+  status.textContent = config?.sdCard ? `helper running · SD ${config.sdCard}` : 'helper running';
+  return true;
 }
 function renderDownloadStatus(data){
   const button = document.getElementById('download-songs');
@@ -520,6 +563,7 @@ function filter(){
 function startAppLoads(){
   if (appStarted) return;
   appStarted = true;
+  checkHelperStatus();
   save();
   updateBatchToggles();
   loadServerDone();
@@ -536,6 +580,15 @@ function startAppLoads(){
   updateCount();
 }
 document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('setup-commands').textContent = setupCommands;
+  document.getElementById('check-helper').addEventListener('click', checkHelperStatus);
+  document.getElementById('copy-setup-commands').addEventListener('click', async () => {
+    await navigator.clipboard.writeText(setupCommands);
+    document.getElementById('copy-setup-commands').textContent = 'Copied';
+    setTimeout(() => {
+      document.getElementById('copy-setup-commands').textContent = 'Copy setup commands';
+    }, 1400);
+  });
   document.querySelectorAll('main section').forEach(section => {
     const h2 = section.querySelector('h2');
     const label = document.createElement('label');
