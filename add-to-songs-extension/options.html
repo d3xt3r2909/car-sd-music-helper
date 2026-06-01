@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Nova helper options</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 20px; max-width: 560px; }
+    label { display: block; font-weight: 650; margin: 12px 0 4px; }
+    input { width: 100%; padding: 9px 10px; box-sizing: border-box; }
+    button { margin-top: 14px; padding: 8px 12px; }
+    #status { margin-left: 8px; color: #0f766e; }
+  </style>
+</head>
+<body>
+  <h1>Nova helper options</h1>
+  <label for="helperBase">Helper URL</label>
+  <input id="helperBase" placeholder="http://127.0.0.1:8765">
+
+  <label for="helperToken">Helper token</label>
+  <input id="helperToken" placeholder="Only needed when helper auth is enabled">
+
+  <button id="save">Save</button>
+  <span id="status"></span>
+
+  <script src="options.js"></script>
+</body>
+</html>

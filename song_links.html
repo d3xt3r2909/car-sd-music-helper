@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="bs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nova song links</title>
+<style>
+:root { color-scheme: light dark; --bg: #f7f7f4; --fg: #171717; --muted: #666; --card: #fff; --line: #ddd; --accent: #0f766e; }
+@media (prefers-color-scheme: dark) { :root { --bg:#111; --fg:#f3f3f3; --muted:#aaa; --card:#1b1b1b; --line:#333; --accent:#2dd4bf; } }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--fg); }
+header { position: sticky; top: 0; z-index: 2; padding: 14px 18px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(12px); }
+h1 { margin: 0 0 10px; font-size: 22px; }
+.controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+input[type="search"] { flex: 1; min-width: 220px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--fg); font-size: 15px; }
+button, a.button { border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--fg); padding: 9px 11px; text-decoration: none; cursor: pointer; font-size: 14px; }
+button.primary, a.primary { border-color: var(--accent); color: var(--accent); }
+main { padding: 18px; max-width: 1100px; margin: 0 auto; }
+section { margin: 0 0 26px; }
+h2 { display: flex; gap: 12px; align-items: center; justify-content: space-between; font-size: 18px; margin: 0 0 10px; }
+.batch-toggle { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; font-weight: 600; color: var(--muted); user-select: none; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 10px; }
+.item { display: grid; grid-template-columns: auto 1fr; gap: 9px 10px; align-items: start; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); cursor: pointer; }
+.item.done { opacity: .48; }
+.item.pending { outline: 2px solid var(--accent); outline-offset: 2px; }
+.item-title { font-weight: 650; line-height: 1.25; overflow-wrap: anywhere; }
+.actions { grid-column: 2; display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.meta { color: var(--muted); font-size: 13px; margin-left: 8px; }
+.manager { padding: 18px; max-width: 1100px; margin: 0 auto; }
+.manager-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.manager-panel { border: 1px solid var(--line); border-radius: 8px; background: var(--card); padding: 12px; }
+.manager-panel h3 { margin: 0 0 8px; font-size: 15px; }
+.manager-panel strong { font-size: 24px; }
+.manager-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+.manager-tools input { min-width: 240px; flex: 1; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--fg); }
+.song-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.downloaded-row { grid-template-columns: auto 1fr minmax(190px, auto) auto; }
+.song-row:first-child { border-top: 0; }
+.song-title { overflow-wrap: anywhere; }
+select { border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--fg); padding: 8px 10px; }
+.badge { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; color: var(--muted); font-size: 12px; }
+.folder-summary { cursor: pointer; font-weight: 700; }
+.duplicate-group { margin-bottom: 10px; }
+.recommendation-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 10px; }
+.recommendation-card { border: 1px solid var(--line); border-radius: 8px; background: var(--card); padding: 12px; }
+.recommendation-card h3 { margin: 0 0 8px; font-size: 15px; line-height: 1.25; overflow-wrap: anywhere; }
+.danger { color: #b91c1c; border-color: #ef4444; }
+.status { min-height: 18px; color: var(--muted); font-size: 13px; }
+.download-log { margin: 10px 0 0; max-height: 260px; overflow: auto; white-space: pre-wrap; border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: color-mix(in srgb, var(--card) 72%, var(--bg)); font-size: 12px; }
+code { overflow-wrap: anywhere; }
+.auth-panel { display: none; max-width: 520px; margin: 18px auto 0; border: 1px solid var(--line); border-radius: 8px; background: var(--card); padding: 14px; }
+.auth-panel.visible { display: block; }
+.auth-panel h2 { display: block; margin: 0 0 10px; }
+.auth-panel input { width: 100%; margin: 0 0 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--fg); font-size: 15px; }
+.auth-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Nova song links <span id="count" class="meta"></span></h1>
+  <div class="controls">
+    <input id="q" type="search" placeholder="Filter: artist, song, folder...">
+    <button id="open-next" class="primary">Open next unresolved</button>
+    <button id="open-visible" class="primary">Open visible Songs</button>
+    <button id="clear-done">Reset manual checks</button>
+    <button id="refresh-library">Refresh SD card</button>
+    <button id="find-duplicates">Find duplicates</button>
+    <button id="load-recommendations">Refresh Songs</button>
+  </div>
+</header>
+<section id="auth-panel" class="auth-panel">
+  <h2>Login</h2>
+  <input id="auth-username" autocomplete="username" placeholder="Username">
+  <input id="auth-password" autocomplete="current-password" type="password" placeholder="Password">
+  <div class="auth-row">
+    <label class="batch-toggle"><input id="auth-remember" type="checkbox" checked> Remember me</label>
+    <button id="auth-login" class="primary">Login</button>
+    <button id="auth-logout">Logout</button>
+    <span id="auth-status" class="status"></span>
+  </div>
+</section>
+<section id="library-manager" class="manager">
+  <div class="manager-grid">
+    <div class="manager-panel">
+      <h3>SD kartica</h3>
+      <strong id="library-total">-</strong>
+      <div id="library-status" class="status">Nije ucitano</div>
+    </div>
+    <div class="manager-panel">
+      <h3>Folderi</h3>
+      <strong id="folder-total">-</strong>
+      <div class="status">Pjesme po folderima</div>
+    </div>
+    <div class="manager-panel">
+      <h3>Duplikati</h3>
+      <strong id="duplicate-total">-</strong>
+      <div id="duplicate-status" class="status">Klikni Find duplicates</div>
+    </div>
+  </div>
+
+  <div class="manager-tools">
+    <input id="library-filter" type="search" placeholder="Filter kartice: artist, song, folder...">
+    <button id="library-refresh-inline" class="primary">Ucitaj karticu</button>
+    <button id="duplicates-refresh-inline">Pronadji duplikate</button>
+    <button id="recommendations-refresh-inline">Osvjezi Songs</button>
+  </div>
+
+  <details class="manager-panel">
+    <summary class="folder-summary">Pjesme na kartici</summary>
+    <div id="folder-list" class="status">Klikni Ucitaj karticu.</div>
+  </details>
+
+  <details class="manager-panel">
+    <summary class="folder-summary">Duplikati</summary>
+    <div id="duplicates-list" class="status">Nema rezultata jos.</div>
+  </details>
+
+  <details class="manager-panel" open>
+    <summary class="folder-summary">Songs <span class="meta">automatski: samo ono sto fali na kartici</span></summary>
+    <div id="recommendations-list" class="status">Ucitavam pjesme koje fale.</div>
+  </details>
+
+  <details class="manager-panel" open>
+    <summary class="folder-summary">Download iz songs.txt</summary>
+    <div class="manager-tools">
+      <button id="download-songs" class="primary">Download songs.txt</button>
+      <button id="download-status-refresh">Refresh status</button>
+      <span id="download-status" class="status">Nije pokrenuto</span>
+    </div>
+    <div class="status">
+      Komanda: <code>yt-dlp -x --audio-format mp3 -P ~/Desktop/nova -a ~/Desktop/nova/songs.txt</code>
+    </div>
+    <div id="download-meta" class="status"></div>
+    <pre id="download-log" class="download-log"></pre>
+  </details>
+
+  <details class="manager-panel" open>
+    <summary class="folder-summary">Downloaded music <span class="meta">prebaci iz nova na SD karticu</span></summary>
+    <div class="manager-tools">
+      <button id="refresh-downloaded" class="primary">Ucitaj downloaded</button>
+      <button id="select-all-downloaded">Select all</button>
+      <select id="bulk-downloaded-folder"></select>
+      <button id="move-selected-downloaded" class="primary">Move selected</button>
+      <label class="batch-toggle"><input id="skip-download-duplicates" type="checkbox" checked> Skip duplicates</label>
+      <span id="downloaded-status" class="status">Nije ucitano</span>
+    </div>
+    <div id="downloaded-list" class="status">Klikni Ucitaj downloaded.</div>
+  </details>
+</section>
+<main>
+<details class="manager-panel">
+<summary class="folder-summary">Rucni prijedlozi / AI <span class="meta">lokalno</span></summary>
+<div class="status">Public verzija ne sadrzi katalog pjesama ili YouTube linkova. Dodaj svoje prijedloge lokalno u <code>~/Desktop/nova/song_search_links.txt</code>.</div>
+</details>
+</main>
+<script>
+const key = 'nova-song-links-done-v2';
+const helperParam = new URLSearchParams(window.location.search).get('helper');
+if (helperParam) localStorage.setItem('nova-helper-base', helperParam);
+const helperBase = helperParam || localStorage.getItem('nova-helper-base') || 'http://127.0.0.1:8765';
+const authTokenKey = `nova-helper-token:${helperBase}`;
+const authSessionKey = `nova-helper-session-token:${helperBase}`;
+let libraryData = null;
+let serverDoneSignature = '';
+let downloadedData = null;
+let lastDownloadRunning = false;
+let authRequired = false;
+let appStarted = false;
+const saved = new Set(JSON.parse(localStorage.getItem(key) || '[]'));
+const defaults = new Set([...document.querySelectorAll('.item[data-default-done="true"]')].map(el => el.dataset.id));
+const done = new Set([...saved, ...defaults]);
+function save(){ localStorage.setItem(key, JSON.stringify([...done])); updateCount(); }
+function authToken(){
+  return localStorage.getItem(authTokenKey) || sessionStorage.getItem(authSessionKey) || '';
+}
+function setAuthToken(token, remember){
+  if (remember) {
+    localStorage.setItem(authTokenKey, token);
+    sessionStorage.removeItem(authSessionKey);
+  } else {
+    sessionStorage.setItem(authSessionKey, token);
+    localStorage.removeItem(authTokenKey);
+  }
+}
+function clearAuthToken(){
+  localStorage.removeItem(authTokenKey);
+  sessionStorage.removeItem(authSessionKey);
+}
+async function helperGet(path, params = {}){
+  const url = new URL(path, helperBase);
+  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+  try {
+    const token = authToken();
+    const headers = token ? { 'X-Nova-Token': token } : {};
+    const response = await fetch(url.toString(), { headers });
+    const type = response.headers.get('content-type') || '';
+    const data = type.includes('application/json') ? await response.json() : await response.text();
+    if (response.status === 401) showAuthPanel(data?.error || 'Login required.');
+    return response.ok ? data : data;
+  } catch (_) {
+    return null;
+  }
+}
+async function helperPost(path, body = {}){
+  const url = new URL(path, helperBase);
+  const token = authToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token ? { 'X-Nova-Token': token } : {})
+  };
+  try {
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body)
+    });
+    const type = response.headers.get('content-type') || '';
+    const data = type.includes('application/json') ? await response.json() : await response.text();
+    if (response.status === 401) showAuthPanel(data?.error || 'Login required.');
+    return response.ok ? data : data;
+  } catch (_) {
+    return null;
+  }
+}
+function showAuthPanel(message = ''){
+  document.getElementById('auth-panel').classList.add('visible');
+  document.getElementById('auth-status').textContent = message;
+}
+function hideAuthPanel(){
+  document.getElementById('auth-panel').classList.remove('visible');
+  document.getElementById('auth-status').textContent = '';
+}
+async function initAuth(){
+  const status = await helperGet('/auth-status');
+  if (!status || !status.ok) {
+    showAuthPanel('Helper nije dostupan.');
+    return false;
+  }
+  authRequired = Boolean(status.enabled);
+  if (!authRequired) {
+    hideAuthPanel();
+    return true;
+  }
+  if (authToken()) {
+    hideAuthPanel();
+    return true;
+  }
+  showAuthPanel('Unesi lokalni helper login.');
+  return false;
+}
+async function login(){
+  const username = document.getElementById('auth-username').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const remember = document.getElementById('auth-remember').checked;
+  document.getElementById('auth-status').textContent = 'Logging in...';
+  const result = await helperPost('/login', { username, password });
+  if (!result || !result.ok || !result.token) {
+    showAuthPanel(result?.error || 'Login failed.');
+    return;
+  }
+  setAuthToken(result.token, remember);
+  hideAuthPanel();
+  startAppLoads();
+}
+function logout(){
+  clearAuthToken();
+  if (authRequired) showAuthPanel('Logged out.');
+}
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[char]);
+}
+function formatBytes(bytes){
+  const value = Number(bytes || 0);
+  if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
+  return `${(value / 1024 / 1024).toFixed(1)} MB`;
+}
+function setStatus(id, text){
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+function renderDownloadStatus(data){
+  const button = document.getElementById('download-songs');
+  const status = document.getElementById('download-status');
+  const meta = document.getElementById('download-meta');
+  const log = document.getElementById('download-log');
+  if (!data) {
+    status.textContent = 'Helper nije dostupan.';
+    return;
+  }
+
+  button.disabled = Boolean(data.running);
+  if (data.running) {
+    status.textContent = `Skida se... PID ${data.pid || '-'}`;
+  } else if (data.exitCode !== undefined) {
+    status.textContent = data.exitCode === 0 ? 'Zavrseno' : `Zavrseno sa greskom (${data.exitCode})`;
+  } else if (data.error) {
+    status.textContent = data.error;
+  } else {
+    status.textContent = 'Spremno';
+  }
+
+  const cleared = data.clearedSongsFile ? ' · songs.txt ociscen nakon uspjesnog run-a' : '';
+  meta.textContent = `songs.txt URL-ova: ${data.urlCount ?? 0}${cleared} · log: ${data.log || ''}`;
+  log.textContent = data.tail || '';
+}
+async function loadDownloadStatus(){
+  const data = await helperGet('/download-status');
+  renderDownloadStatus(data);
+  if (lastDownloadRunning && data && !data.running) {
+    loadDownloadedMusic();
+  }
+  lastDownloadRunning = Boolean(data?.running);
+  return data;
+}
+async function startSongsDownload(){
+  const button = document.getElementById('download-songs');
+  button.disabled = true;
+  document.getElementById('download-status').textContent = 'Pokrecem...';
+  const data = await helperGet('/download-songs');
+  renderDownloadStatus(data);
+  if (data?.running) {
+    setTimeout(loadDownloadStatus, 1500);
+  }
+}
+function folderOptions(folders, selected){
+  return folders.map(folder => `<option value="${escapeHtml(folder)}" ${folder === selected ? 'selected' : ''}>${escapeHtml(folder)}</option>`).join('');
+}
+function renderDownloadedMusic(data){
+  downloadedData = data;
+  const list = document.getElementById('downloaded-list');
+  const status = document.getElementById('downloaded-status');
+  const bulkFolder = document.getElementById('bulk-downloaded-folder');
+  if (!data || !data.ok) {
+    status.textContent = 'Ne mogu procitati downloaded folder.';
+    list.textContent = 'Greska.';
+    bulkFolder.innerHTML = '';
+    return;
+  }
+  status.textContent = `${data.count} MP3 u ${data.downloadDir}`;
+  bulkFolder.innerHTML = `<option value="">Auto folder per song</option>${folderOptions(data.folders, '')}`;
+  if (!data.songs.length) {
+    list.innerHTML = '<div class="status">Nema skinutih MP3 fajlova za prebaciti.</div>';
+    return;
+  }
+  list.innerHTML = data.songs.map(song => `
+    <div class="song-row downloaded-row" data-downloaded-path="${escapeHtml(song.path)}">
+      <input type="checkbox" aria-label="Select downloaded song" ${song.alreadyOnCard ? '' : 'checked'}>
+      <div>
+        <div class="song-title">${escapeHtml(song.name)}</div>
+        <span class="badge">${formatBytes(song.size)}</span>
+        <span class="badge">${song.alreadyOnCard ? 'vec na kartici' : 'novo'}</span>
+      </div>
+      <select>${folderOptions(data.folders, song.suggestedFolder)}</select>
+      <button data-move-one>Move</button>
+    </div>`).join('');
+  list.querySelectorAll('[data-move-one]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const row = button.closest('[data-downloaded-path]');
+      await moveDownloadedRows([row]);
+    });
+  });
+}
+async function loadDownloadedMusic(){
+  document.getElementById('downloaded-status').textContent = 'Ucitavam...';
+  const data = await helperGet('/downloaded-music');
+  renderDownloadedMusic(data);
+  return data;
+}
+async function moveDownloadedRows(rows){
+  if (!rows.length) return;
+  const skipDuplicate = document.getElementById('skip-download-duplicates').checked ? 'true' : 'false';
+  const bulkFolder = document.getElementById('bulk-downloaded-folder').value;
+  const status = document.getElementById('downloaded-status');
+  let moved = 0;
+  let skipped = 0;
+  for (const row of rows) {
+    const folder = bulkFolder || row.querySelector('select').value;
+    const name = row.dataset.downloadedPath.split('/').pop();
+    status.textContent = `Premjestam ${name}...`;
+    const result = await helperGet('/move-downloaded', {
+      path: row.dataset.downloadedPath,
+      folder,
+      skipDuplicate
+    });
+    if (!result || !result.ok) {
+      alert(`${name}: ${result?.error || 'Move nije uspio.'}`);
+      continue;
+    }
+    if (result.skippedDuplicate) skipped += 1;
+    else moved += 1;
+  }
+  status.textContent = `Moved: ${moved}, skipped duplicates: ${skipped}`;
+  await loadDownloadedMusic();
+  await loadLibrary();
+  await loadRecommendations();
+}
+function songRow(song){
+  return `<div class="song-row">
+    <div>
+      <div class="song-title">${escapeHtml(song.name)}</div>
+      <span class="badge">${escapeHtml(song.folder)}</span>
+      <span class="badge">${formatBytes(song.size)}</span>
+    </div>
+    <button class="danger" data-remove-path="${escapeHtml(song.path)}">Remove</button>
+  </div>`;
+}
+function attachRemoveButtons(root = document){
+  root.querySelectorAll('[data-remove-path]').forEach(button => {
+    button.addEventListener('click', async event => {
+      event.preventDefault();
+      event.stopPropagation();
+      const path = button.dataset.removePath;
+      const name = path.split('/').pop();
+      if (!confirm(`Ukloniti "${name}" sa aktivne liste? Fajl ide u _Removed_By_Helper.`)) return;
+      button.disabled = true;
+      button.textContent = 'Removing...';
+      const result = await helperGet('/remove-song', { path });
+      if (!result || !result.ok) {
+        alert(result?.error || 'Remove nije uspio.');
+        button.disabled = false;
+        button.textContent = 'Remove';
+        return;
+      }
+      await loadLibrary();
+      await loadDuplicates();
+      await loadRecommendations();
+    });
+  });
+}
+async function loadLibrary(){
+  setStatus('library-status', 'Ucitavam...');
+  const data = await helperGet('/library');
+  const list = document.getElementById('folder-list');
+  if (!data || !data.ok) {
+    libraryData = null;
+    document.getElementById('library-total').textContent = '0';
+    document.getElementById('folder-total').textContent = '0';
+    list.textContent = 'SD kartica nije dostupna.';
+    setStatus('library-status', 'Nije dostupno');
+    return null;
+  }
+
+  libraryData = data;
+  document.getElementById('library-total').textContent = data.total;
+  document.getElementById('folder-total').textContent = data.folders.length;
+  setStatus('library-status', data.root);
+  renderLibraryFolders(data);
+  return data;
+}
+function renderLibraryFolders(data){
+  const queries = [
+    document.getElementById('q').value,
+    document.getElementById('library-filter').value
+  ].map(value => value.toLowerCase().trim()).filter(Boolean);
+  const list = document.getElementById('folder-list');
+  const sections = data.folders.map(folder => {
+    const songs = folder.songs.filter(song => {
+      if (!queries.length) return true;
+      const text = `${song.folder} ${song.name}`.toLowerCase();
+      return queries.every(query => text.includes(query));
+    });
+    if (!songs.length) return '';
+    return `<details class="manager-panel" ${queries.length ? 'open' : ''}>
+      <summary class="folder-summary">${escapeHtml(folder.name)} <span class="meta">${songs.length}/${folder.count}</span></summary>
+      <div>${songs.map(songRow).join('')}</div>
+    </details>`;
+  }).filter(Boolean).join('');
+  list.innerHTML = sections || '<div class="status">Nema pjesama za ovaj filter.</div>';
+  attachRemoveButtons(list);
+}
+async function loadDuplicates(){
+  setStatus('duplicate-status', 'Trazim...');
+  const data = await helperGet('/duplicates');
+  const list = document.getElementById('duplicates-list');
+  if (!data || !data.ok) {
+    document.getElementById('duplicate-total').textContent = '0';
+    list.textContent = 'Ne mogu procitati karticu.';
+    setStatus('duplicate-status', 'Greska');
+    return null;
+  }
+
+  document.getElementById('duplicate-total').textContent = data.groups;
+  setStatus('duplicate-status', `${data.duplicateSongs} pjesama u ${data.groups} grupa`);
+  if (!data.duplicates.length) {
+    list.innerHTML = '<div class="status">Nema pronadjenih duplikata po nazivu.</div>';
+    return data;
+  }
+
+  list.innerHTML = data.duplicates.map(group => `<div class="duplicate-group manager-panel">
+    <h3>${escapeHtml(group.key)} <span class="meta">${group.count} kom</span></h3>
+    ${group.songs.map(songRow).join('')}
+  </div>`).join('');
+  attachRemoveButtons(list);
+  return data;
+}
+async function loadRecommendations(){
+  const list = document.getElementById('recommendations-list');
+  list.textContent = 'Racunam sta fali...';
+  const data = await helperGet('/recommendations', { limit: '160' });
+  if (!data || !data.ok) {
+    list.textContent = 'Ne mogu izracunati prijedloge jer kartica nije dostupna.';
+    return null;
+  }
+  if (!data.items.length) {
+    list.innerHTML = '<div class="status">Nema novih prijedloga iz trenutne liste.</div>';
+    return data;
+  }
+  list.innerHTML = `<div class="recommendation-grid">${data.items.map(item => `
+    <article class="recommendation-card" data-title="${escapeHtml(`${item.title} ${item.section}`)}">
+      <h3>${escapeHtml(item.title)}</h3>
+      <div class="status">${escapeHtml(item.section)} · ${escapeHtml(item.reason)}</div>
+      <div class="actions">
+        <button class="primary" data-rec-source="${escapeHtml(item.sourceId)}" data-rec-title="${escapeHtml(item.title)}" data-rec-url="${escapeHtml(item.url)}">Search</button>
+        <button data-copy-title="${escapeHtml(item.title)}">Copy title</button>
+      </div>
+    </article>`).join('')}</div>`;
+  list.querySelectorAll('[data-rec-url]').forEach(button => {
+    button.addEventListener('click', async () => {
+      await helperGet('/pending', {
+        sourceId: button.dataset.recSource,
+        title: button.dataset.recTitle
+      });
+      window.open(button.dataset.recUrl, '_blank');
+    });
+  });
+  list.querySelectorAll('[data-copy-title]').forEach(button => {
+    button.addEventListener('click', () => navigator.clipboard.writeText(button.dataset.copyTitle));
+  });
+  filterRecommendations();
+  return data;
+}
+function filterRecommendations(){
+  const q = document.getElementById('q').value.toLowerCase().trim();
+  document.querySelectorAll('#recommendations-list .recommendation-card').forEach(card => {
+    const text = card.dataset.title.toLowerCase();
+    card.classList.toggle('hidden', q && !text.includes(q));
+  });
+}
+function updateCount(){
+  const total = document.querySelectorAll('.item').length;
+  const checked = document.querySelectorAll('.item input:checked').length;
+  document.getElementById('count').textContent = total ? `${checked}/${total} rijeseno` : '';
+}
+function setItemDone(el, checked){
+  const id = el.dataset.id;
+  const box = el.querySelector('input');
+  box.checked = checked;
+  el.classList.toggle('done', checked);
+  if (checked) done.add(id);
+  else done.delete(id);
+}
+function persistItemDone(el, checked){
+  helperGet('/mark', {
+    sourceId: el.dataset.id,
+    title: el.dataset.title,
+    done: checked ? 'true' : 'false'
+  });
+}
+async function loadServerDone(){
+  const values = await helperGet('/done');
+  if (!values || typeof values !== 'object') return;
+  const signature = JSON.stringify(Object.keys(values).sort());
+  Object.keys(values).forEach(id => {
+    const el = document.querySelector(`.item[data-id="${CSS.escape(id)}"]`);
+    if (el) setItemDone(el, true);
+  });
+  save();
+  updateBatchToggles();
+  if (serverDoneSignature && signature !== serverDoneSignature) {
+    loadRecommendations();
+  }
+  serverDoneSignature = signature;
+}
+async function registerPending(el){
+  el.classList.add('pending');
+  await helperGet('/pending', {
+    sourceId: el.dataset.id,
+    title: el.dataset.title
+  });
+  setTimeout(() => el.classList.remove('pending'), 2500);
+}
+function openNextUnresolved(){
+  const recommendation = document.querySelector('#recommendations-list .recommendation-card:not(.hidden) [data-rec-url]');
+  if (recommendation) {
+    recommendation.click();
+    return;
+  }
+  const el = document.querySelector('.item:not(.hidden):not(.done)');
+  if (!el) return;
+  registerPending(el);
+  window.open(el.querySelector('a.search').href, '_blank');
+}
+function updateBatchToggles(){
+  document.querySelectorAll('main section').forEach(section => {
+    const batchBox = section.querySelector('.batch-toggle input');
+    if (!batchBox) return;
+    const items = [...section.querySelectorAll('.item')];
+    const checked = items.filter(el => el.querySelector('input').checked).length;
+    batchBox.checked = checked === items.length;
+    batchBox.indeterminate = checked > 0 && checked < items.length;
+  });
+}
+function filter(){
+  const q = document.getElementById('q').value.toLowerCase().trim();
+  document.querySelectorAll('.item').forEach(el => {
+    const text = el.dataset.title.toLowerCase();
+    el.classList.toggle('hidden', q && !text.includes(q));
+  });
+  document.querySelectorAll('main section').forEach(sec => {
+    sec.classList.toggle('hidden', !sec.querySelector('.item:not(.hidden)'));
+  });
+  updateBatchToggles();
+  filterRecommendations();
+  if (libraryData) renderLibraryFolders(libraryData);
+}
+function startAppLoads(){
+  if (appStarted) return;
+  appStarted = true;
+  save();
+  updateBatchToggles();
+  loadServerDone();
+  setInterval(loadServerDone, 2000);
+  loadLibrary();
+  loadRecommendations();
+  loadDownloadStatus();
+  loadDownloadedMusic();
+  setInterval(async () => {
+    const data = await loadDownloadStatus();
+    if (!data?.running) return;
+    loadDownloadedMusic();
+  }, 3000);
+  updateCount();
+}
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('main section').forEach(section => {
+    const h2 = section.querySelector('h2');
+    const label = document.createElement('label');
+    label.className = 'batch-toggle';
+    label.innerHTML = '<input type="checkbox"> <span>Batch done</span>';
+    h2.appendChild(label);
+    const batchBox = label.querySelector('input');
+    batchBox.addEventListener('change', event => {
+      event.stopPropagation();
+      section.querySelectorAll('.item').forEach(el => {
+        setItemDone(el, batchBox.checked);
+        persistItemDone(el, batchBox.checked);
+      });
+      save();
+      updateBatchToggles();
+    });
+  });
+  document.querySelectorAll('.item').forEach(el => {
+    const box = el.querySelector('input');
+    if (done.has(el.dataset.id)) setItemDone(el, true);
+    box.addEventListener('change', () => {
+      setItemDone(el, box.checked);
+      persistItemDone(el, box.checked);
+      save();
+      updateBatchToggles();
+    });
+    el.querySelector('a.search').addEventListener('click', () => {
+      registerPending(el);
+    });
+    el.addEventListener('click', event => {
+      if (event.target.closest('a, button, input, label')) return;
+      setItemDone(el, !box.checked);
+      persistItemDone(el, box.checked);
+      save();
+      updateBatchToggles();
+    });
+  });
+  document.getElementById('auth-login').addEventListener('click', login);
+  document.getElementById('auth-logout').addEventListener('click', logout);
+  document.getElementById('auth-password').addEventListener('keydown', event => {
+    if (event.key === 'Enter') login();
+  });
+  document.getElementById('q').addEventListener('input', filter);
+  document.getElementById('open-next').addEventListener('click', openNextUnresolved);
+  document.getElementById('open-visible').addEventListener('click', () => {
+    const recommendations = [...document.querySelectorAll('#recommendations-list .recommendation-card:not(.hidden) [data-rec-url]')];
+    if (recommendations.length) {
+      recommendations.forEach((button, i) => setTimeout(() => button.click(), i * 180));
+      return;
+    }
+    document.querySelectorAll('.item:not(.hidden):not(.done) a.search').forEach((a, i) => setTimeout(() => window.open(a.href, '_blank'), i * 180));
+  });
+  document.getElementById('clear-done').addEventListener('click', () => {
+    if (!confirm('Resetovati rucne checkboxe? Stavke koje vec postoje na kartici ostaju rijesene.')) return;
+    localStorage.removeItem(key);
+    done.clear();
+    helperGet('/clear-done');
+    document.querySelectorAll('.item').forEach(el => {
+      const defaultDone = el.dataset.defaultDone === 'true';
+      setItemDone(el, defaultDone);
+      if (defaultDone) persistItemDone(el, true);
+    });
+    save();
+    updateBatchToggles();
+    updateCount();
+  });
+  document.getElementById('refresh-library').addEventListener('click', loadLibrary);
+  document.getElementById('library-refresh-inline').addEventListener('click', loadLibrary);
+  document.getElementById('find-duplicates').addEventListener('click', loadDuplicates);
+  document.getElementById('duplicates-refresh-inline').addEventListener('click', loadDuplicates);
+  document.getElementById('load-recommendations').addEventListener('click', loadRecommendations);
+  document.getElementById('recommendations-refresh-inline').addEventListener('click', loadRecommendations);
+  document.getElementById('download-songs').addEventListener('click', startSongsDownload);
+  document.getElementById('download-status-refresh').addEventListener('click', loadDownloadStatus);
+  document.getElementById('refresh-downloaded').addEventListener('click', loadDownloadedMusic);
+  document.getElementById('select-all-downloaded').addEventListener('click', () => {
+    const boxes = [...document.querySelectorAll('#downloaded-list [data-downloaded-path] input[type="checkbox"]')];
+    const shouldCheck = boxes.some(box => !box.checked);
+    boxes.forEach(box => {
+      box.checked = shouldCheck;
+    });
+    document.getElementById('select-all-downloaded').textContent = shouldCheck ? 'Unselect all' : 'Select all';
+  });
+  document.getElementById('bulk-downloaded-folder').addEventListener('change', event => {
+    if (!event.target.value) return;
+    document.querySelectorAll('#downloaded-list [data-downloaded-path] select').forEach(select => {
+      select.value = event.target.value;
+    });
+  });
+  document.getElementById('move-selected-downloaded').addEventListener('click', () => {
+    const rows = [...document.querySelectorAll('#downloaded-list [data-downloaded-path]')]
+      .filter(row => row.querySelector('input[type="checkbox"]').checked);
+    moveDownloadedRows(rows);
+  });
+  document.getElementById('library-filter').addEventListener('input', () => {
+    if (libraryData) renderLibraryFolders(libraryData);
+  });
+  initAuth().then(ok => {
+    if (ok) startAppLoads();
+    else updateCount();
+  });
+});
+</script>
+</body>
+</html>

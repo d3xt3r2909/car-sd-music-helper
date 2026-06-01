@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Add to songs.txt",
+  "version": "1.0.0",
+  "description": "Adds the current YouTube video URL to ~/Desktop/nova/songs.txt.",
+  "permissions": ["activeTab", "tabs", "storage"],
+  "host_permissions": ["http://127.0.0.1:8765/*", "http://localhost:8765/*"],
+  "action": {
+    "default_title": "Add to songs.txt"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*", "https://youtu.be/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "commands": {
+    "add-current-youtube": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y",
+        "mac": "Command+Shift+Y"
+      },
+      "description": "Accept: save current YouTube video and open next suggestion"
+    },
+    "skip-current-suggestion": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+N",
+        "mac": "Command+Shift+N"
+      },
+      "description": "Reject: skip current suggestion and open next suggestion"
+    }
+  }
+}

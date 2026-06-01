@@ -1,0 +1,7 @@
+Batch Example
+
+Artist Name - Song Title
+https://www.youtube.com/results?search_query=Artist+Name+-+Song+Title+official+audio
+
+Another Artist - Another Song
+https://www.youtube.com/results?search_query=Another+Artist+-+Another+Song+official+audio
