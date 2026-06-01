@@ -1,6 +1,6 @@
 # Nova Music Helper - Portable Setup
 
-This setup has two parts:
+This setup is macOS-only and has two parts:
 
 1. Hosted page: `song_links.html`
 2. Local helper: `link_helper_server.py` running on the computer/account that has the SD card
@@ -98,6 +98,10 @@ https://your-page.example/song_links.html?helper=http://127.0.0.1:8765
 The page stores that helper URL in browser localStorage.
 
 The hosted page has a `First setup on this Mac` panel. It can check whether the helper is running and copy the install commands, but it cannot install the helper directly from the browser.
+
+## Page Visits
+
+GitHub Pages does not count page visits inside this app. Use GitHub repository `Insights` -> `Traffic` for basic traffic, or add a public analytics snippet to `song_links.html` for page-view analytics.
 
 ## Chrome Extension
 

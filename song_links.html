@@ -69,7 +69,7 @@ pre.setup-command { margin: 10px 0; white-space: pre-wrap; border: 1px solid var
 </header>
 <section id="setup-panel" class="manager">
   <details class="manager-panel" open>
-    <summary class="folder-summary">First setup on this Mac <span id="helper-status" class="meta">checking helper...</span></summary>
+    <summary class="folder-summary">First setup on this Mac <span class="meta">macOS only</span> <span id="helper-status" class="meta">checking helper...</span></summary>
     <div class="manager-tools">
       <button id="check-helper" class="primary">Check helper</button>
       <button id="copy-setup-commands">Copy setup commands</button>
@@ -78,11 +78,14 @@ pre.setup-command { margin: 10px 0; white-space: pre-wrap; border: 1px solid var
       <a class="button" href="https://github.com/d3xt3r2909/car-sd-music-helper" target="_blank" rel="noopener">GitHub repo</a>
     </div>
     <div class="status">
-      The web page cannot install the local helper by itself. Run this once on the Mac that has the SD card.
+      This helper is built for macOS only. The web page cannot install the local helper by itself. Run this once on the Mac that has the SD card.
     </div>
     <pre id="setup-commands" class="setup-command"></pre>
     <div class="status">
       If the SD card is not named <code>Untitled</code>, edit <code>~/Desktop/nova/nova_helper_config.json</code> and change <code>sd_card</code>.
+    </div>
+    <div class="status">
+      Page visits are not counted locally. For visit analytics, use GitHub repository Insights/Traffic or add a privacy-friendly analytics snippet such as Cloudflare Web Analytics, GoatCounter, Plausible, or Umami.
     </div>
   </details>
 </section>

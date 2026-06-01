@@ -2,7 +2,7 @@
 
 Local helper and browser UI for building an MP3 collection for a car SD card.
 
-The web page can be hosted anywhere, but file access and downloads are handled by a small local helper server running on the computer that has the SD card mounted.
+This project is macOS-only. The web page can be hosted anywhere, but file access and downloads are handled by a small local helper server running on the Mac that has the SD card mounted.
 
 ## Disclaimer
 
@@ -45,7 +45,7 @@ The hosted page cannot do those local filesystem operations by itself because br
 
 ## Requirements
 
-macOS with:
+macOS only, with:
 
 ```bash
 brew install yt-dlp ffmpeg deno
@@ -138,6 +138,17 @@ https://your-site.example/song_links.html?helper=http://127.0.0.1:8765
 The page stores the helper URL in browser localStorage.
 
 The hosted page includes a setup panel with helper status, copyable setup commands, and project download links. It can check `http://127.0.0.1:8765`, but it cannot install the helper by itself because browsers cannot write LaunchAgents or access the local filesystem.
+
+## Page Visits
+
+GitHub Pages is static hosting, so this project does not count visits by itself.
+
+Options:
+
+- Use GitHub repository `Insights` -> `Traffic` for basic repository traffic.
+- Add an external analytics snippet to `song_links.html` for real page views, for example Cloudflare Web Analytics, GoatCounter, Plausible, or Umami.
+
+Keep analytics snippets public-safe: do not put private API keys or secrets into the HTML.
 
 ## Chrome Extension
 
