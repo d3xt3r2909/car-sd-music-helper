@@ -52,13 +52,7 @@ if [ ! -f "$NOVA_DIR/nova_helper_config.json" ]; then
   "pending_file": "$NOVA_DIR/song_links_pending.json",
   "download_log_file": "$NOVA_DIR/yt_dlp_download.log",
   "download_status_file": "$NOVA_DIR/yt_dlp_status.json",
-  "sd_card": "/Volumes/Untitled",
-  "auth": {
-    "enabled": false,
-    "username": "",
-    "password": "",
-    "api_token": ""
-  }
+  "sd_card": "/Volumes/Untitled"
 }
 JSON
 fi

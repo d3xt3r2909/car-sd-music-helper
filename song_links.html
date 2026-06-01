@@ -48,11 +48,6 @@ select { border: 1px solid var(--line); border-radius: 8px; background: var(--ca
 .status { min-height: 18px; color: var(--muted); font-size: 13px; }
 .download-log { margin: 10px 0 0; max-height: 260px; overflow: auto; white-space: pre-wrap; border: 1px solid var(--line); border-radius: 8px; padding: 10px; background: color-mix(in srgb, var(--card) 72%, var(--bg)); font-size: 12px; }
 code { overflow-wrap: anywhere; }
-.auth-panel { display: none; max-width: 520px; margin: 18px auto 0; border: 1px solid var(--line); border-radius: 8px; background: var(--card); padding: 14px; }
-.auth-panel.visible { display: block; }
-.auth-panel h2 { display: block; margin: 0 0 10px; }
-.auth-panel input { width: 100%; margin: 0 0 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--fg); font-size: 15px; }
-.auth-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .hidden { display: none !important; }
 </style>
 </head>
@@ -69,17 +64,6 @@ code { overflow-wrap: anywhere; }
     <button id="load-recommendations">Refresh Songs</button>
   </div>
 </header>
-<section id="auth-panel" class="auth-panel">
-  <h2>Login</h2>
-  <input id="auth-username" autocomplete="username" placeholder="Username">
-  <input id="auth-password" autocomplete="current-password" type="password" placeholder="Password">
-  <div class="auth-row">
-    <label class="batch-toggle"><input id="auth-remember" type="checkbox" checked> Remember me</label>
-    <button id="auth-login" class="primary">Login</button>
-    <button id="auth-logout">Logout</button>
-    <span id="auth-status" class="status"></span>
-  </div>
-</section>
 <section id="library-manager" class="manager">
   <div class="manager-grid">
     <div class="manager-panel">
@@ -159,113 +143,26 @@ const key = 'nova-song-links-done-v2';
 const helperParam = new URLSearchParams(window.location.search).get('helper');
 if (helperParam) localStorage.setItem('nova-helper-base', helperParam);
 const helperBase = helperParam || localStorage.getItem('nova-helper-base') || 'http://127.0.0.1:8765';
-const authTokenKey = `nova-helper-token:${helperBase}`;
-const authSessionKey = `nova-helper-session-token:${helperBase}`;
 let libraryData = null;
 let serverDoneSignature = '';
 let downloadedData = null;
 let lastDownloadRunning = false;
-let authRequired = false;
 let appStarted = false;
 const saved = new Set(JSON.parse(localStorage.getItem(key) || '[]'));
 const defaults = new Set([...document.querySelectorAll('.item[data-default-done="true"]')].map(el => el.dataset.id));
 const done = new Set([...saved, ...defaults]);
 function save(){ localStorage.setItem(key, JSON.stringify([...done])); updateCount(); }
-function authToken(){
-  return localStorage.getItem(authTokenKey) || sessionStorage.getItem(authSessionKey) || '';
-}
-function setAuthToken(token, remember){
-  if (remember) {
-    localStorage.setItem(authTokenKey, token);
-    sessionStorage.removeItem(authSessionKey);
-  } else {
-    sessionStorage.setItem(authSessionKey, token);
-    localStorage.removeItem(authTokenKey);
-  }
-}
-function clearAuthToken(){
-  localStorage.removeItem(authTokenKey);
-  sessionStorage.removeItem(authSessionKey);
-}
 async function helperGet(path, params = {}){
   const url = new URL(path, helperBase);
   Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
   try {
-    const token = authToken();
-    const headers = token ? { 'X-Nova-Token': token } : {};
-    const response = await fetch(url.toString(), { headers });
+    const response = await fetch(url.toString());
     const type = response.headers.get('content-type') || '';
     const data = type.includes('application/json') ? await response.json() : await response.text();
-    if (response.status === 401) showAuthPanel(data?.error || 'Login required.');
     return response.ok ? data : data;
   } catch (_) {
     return null;
   }
-}
-async function helperPost(path, body = {}){
-  const url = new URL(path, helperBase);
-  const token = authToken();
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(token ? { 'X-Nova-Token': token } : {})
-  };
-  try {
-    const response = await fetch(url.toString(), {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body)
-    });
-    const type = response.headers.get('content-type') || '';
-    const data = type.includes('application/json') ? await response.json() : await response.text();
-    if (response.status === 401) showAuthPanel(data?.error || 'Login required.');
-    return response.ok ? data : data;
-  } catch (_) {
-    return null;
-  }
-}
-function showAuthPanel(message = ''){
-  document.getElementById('auth-panel').classList.add('visible');
-  document.getElementById('auth-status').textContent = message;
-}
-function hideAuthPanel(){
-  document.getElementById('auth-panel').classList.remove('visible');
-  document.getElementById('auth-status').textContent = '';
-}
-async function initAuth(){
-  const status = await helperGet('/auth-status');
-  if (!status || !status.ok) {
-    showAuthPanel('Helper nije dostupan.');
-    return false;
-  }
-  authRequired = Boolean(status.enabled);
-  if (!authRequired) {
-    hideAuthPanel();
-    return true;
-  }
-  if (authToken()) {
-    hideAuthPanel();
-    return true;
-  }
-  showAuthPanel('Unesi lokalni helper login.');
-  return false;
-}
-async function login(){
-  const username = document.getElementById('auth-username').value.trim();
-  const password = document.getElementById('auth-password').value;
-  const remember = document.getElementById('auth-remember').checked;
-  document.getElementById('auth-status').textContent = 'Logging in...';
-  const result = await helperPost('/login', { username, password });
-  if (!result || !result.ok || !result.token) {
-    showAuthPanel(result?.error || 'Login failed.');
-    return;
-  }
-  setAuthToken(result.token, remember);
-  hideAuthPanel();
-  startAppLoads();
-}
-function logout(){
-  clearAuthToken();
-  if (authRequired) showAuthPanel('Logged out.');
 }
 function escapeHtml(value){
   return String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -676,11 +573,6 @@ document.addEventListener('DOMContentLoaded', () => {
       updateBatchToggles();
     });
   });
-  document.getElementById('auth-login').addEventListener('click', login);
-  document.getElementById('auth-logout').addEventListener('click', logout);
-  document.getElementById('auth-password').addEventListener('keydown', event => {
-    if (event.key === 'Enter') login();
-  });
   document.getElementById('q').addEventListener('input', filter);
   document.getElementById('open-next').addEventListener('click', openNextUnresolved);
   document.getElementById('open-visible').addEventListener('click', () => {
@@ -736,10 +628,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('library-filter').addEventListener('input', () => {
     if (libraryData) renderLibraryFolders(libraryData);
   });
-  initAuth().then(ok => {
-    if (ok) startAppLoads();
-    else updateCount();
-  });
+  startAppLoads();
 });
 </script>
 </body>

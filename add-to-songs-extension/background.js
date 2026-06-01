@@ -2,8 +2,7 @@ const defaultHelperBase = "http://127.0.0.1:8765";
 
 async function helperSettings() {
   const values = await chrome.storage.local.get({
-    helperBase: defaultHelperBase,
-    helperToken: ""
+    helperBase: defaultHelperBase
   });
   return values;
 }
@@ -36,12 +35,8 @@ async function requestJson(path, params = {}) {
   const settings = await helperSettings();
   const target = new URL(path, settings.helperBase || defaultHelperBase);
   Object.entries(params).forEach(([key, value]) => target.searchParams.set(key, value || ""));
-  const headers = settings.helperToken ? { "X-Nova-Token": settings.helperToken } : {};
-  const response = await fetch(target.toString(), { headers });
+  const response = await fetch(target.toString());
   if (!response.ok) {
-    if (response.status === 401) {
-      throw new Error("AUTH");
-    }
     throw new Error(`Helper returned ${response.status}`);
   }
   return response.json();
@@ -84,7 +79,7 @@ async function acceptCurrentYouTubeTab() {
     await setBadge(result.next && result.next.url ? "OK" : "END", "#0f766e");
     await openNextAndCloseCurrent(tab, result.next);
   } catch (error) {
-    await setBadge(error.message === "AUTH" ? "AUTH" : "OFF", "#b91c1c");
+    await setBadge("OFF", "#b91c1c");
   }
 }
 
@@ -101,7 +96,7 @@ async function skipCurrentSuggestion() {
     await setBadge(result.next && result.next.url ? "SKIP" : "END", "#b45309");
     await openNextAndCloseCurrent(tab, result.next);
   } catch (error) {
-    await setBadge(error.message === "AUTH" ? "AUTH" : "OFF", "#b91c1c");
+    await setBadge("OFF", "#b91c1c");
   }
 }
 

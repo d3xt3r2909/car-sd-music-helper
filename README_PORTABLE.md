@@ -116,35 +116,6 @@ The extension expects the helper on:
 http://127.0.0.1:8765
 ```
 
-If auth is enabled in `nova_helper_config.json`, open extension options and paste the configured `auth.api_token`.
-
-## Optional Login
-
-Do not put fixed credentials into `song_links.html` if the page is public. Store them locally in:
-
-```text
-~/Desktop/nova/nova_helper_config.json
-```
-
-Example:
-
-```json
-{
-  "auth": {
-    "enabled": true,
-    "username": "your-user",
-    "password": "your-password",
-    "api_token": "generate-a-long-random-token"
-  }
-}
-```
-
-Generate token:
-
-```bash
-python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
-```
-
 ## Files That Should Travel Together
 
 Minimum useful bundle:

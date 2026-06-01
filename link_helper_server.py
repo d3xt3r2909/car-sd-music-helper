@@ -3,12 +3,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlparse
 import html
-import hashlib
-import hmac
 import json
 import os
 import re
-import secrets
 import shutil
 import subprocess
 import threading
@@ -41,7 +38,6 @@ REMOVED_DIR_NAME = "_Removed_By_Helper"
 LOCAL_DUPLICATES_DIR_NAME = "_Already_On_Card"
 PENDING_MAX_AGE_SECONDS = 60 * 60
 DOWNLOAD_PROCESS = None
-AUTH_SESSIONS: set[str] = set()
 
 REMOVE_WORDS = {
     "official",
@@ -75,54 +71,6 @@ def write_json(path: Path, value) -> None:
         json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-
-
-def auth_config() -> dict:
-    value = CONFIG.get("auth", {})
-    return value if isinstance(value, dict) else {}
-
-
-def auth_enabled() -> bool:
-    return bool(auth_config().get("enabled"))
-
-
-def configured_api_token() -> str:
-    return str(auth_config().get("api_token", "") or "")
-
-
-def password_matches(password: str) -> bool:
-    auth = auth_config()
-    expected = str(auth.get("password", "") or "")
-    expected_hash = str(auth.get("password_sha256", "") or "")
-
-    if expected_hash:
-        value_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
-        return hmac.compare_digest(value_hash, expected_hash)
-
-    return bool(expected) and hmac.compare_digest(password, expected)
-
-
-def login_user(username: str, password: str) -> dict:
-    auth = auth_config()
-    expected_username = str(auth.get("username", "") or "")
-    if not expected_username or not hmac.compare_digest(username, expected_username):
-        raise ValueError("Invalid username or password.")
-    if not password_matches(password):
-        raise ValueError("Invalid username or password.")
-
-    token = configured_api_token() or secrets.token_urlsafe(32)
-    AUTH_SESSIONS.add(token)
-    return {"ok": True, "token": token, "authEnabled": True}
-
-
-def auth_status() -> dict:
-    auth = auth_config()
-    return {
-        "ok": True,
-        "enabled": auth_enabled(),
-        "usernameRequired": bool(auth.get("username")),
-        "hasApiToken": bool(configured_api_token()),
-    }
 
 
 def clean_title(value: str) -> str:
@@ -838,75 +786,25 @@ def consume_pending(url: str) -> dict:
 
 
 class Handler(BaseHTTPRequestHandler):
-    PUBLIC_PATHS = {"/health", "/config", "/auth-status", "/login"}
-
     def do_OPTIONS(self):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "*")
         self.send_header("Access-Control-Allow-Private-Network", "true")
         self.end_headers()
 
-    def authenticated(self, parsed) -> bool:
-        if not auth_enabled() or parsed.path in self.PUBLIC_PATHS:
-            return True
-
-        params = parse_qs(parsed.query)
-        token = (
-            self.headers.get("X-Nova-Token", "")
-            or self.headers.get("Authorization", "").removeprefix("Bearer ").strip()
-            or params.get("token", [""])[0]
-        )
-        api_token = configured_api_token()
-        if api_token and hmac.compare_digest(token, api_token):
-            return True
-        return token in AUTH_SESSIONS
-
-    def reject_unauthorized(self):
-        self.respond_json(
-            {
-                "ok": False,
-                "authRequired": True,
-                "error": "Login required.",
-            },
-            status=401,
-        )
-
-    def do_POST(self):
-        parsed = urlparse(self.path)
-        if parsed.path != "/login":
-            self.respond_json({"ok": False, "error": "Use GET."}, status=404)
-            return
-
-        try:
-            length = int(self.headers.get("Content-Length", "0") or "0")
-            raw = self.rfile.read(length).decode("utf-8") if length else "{}"
-            body = json.loads(raw)
-            result = login_user(str(body.get("username", "")), str(body.get("password", "")))
-            self.respond_json(result)
-        except Exception as error:
-            self.respond_json({"ok": False, "error": str(error)}, status=401)
-
     def do_GET(self):
         parsed = urlparse(self.path)
-        if not self.authenticated(parsed):
-            self.reject_unauthorized()
-            return
 
         if parsed.path == "/health":
             self.respond_text("ok")
-            return
-
-        if parsed.path == "/auth-status":
-            self.respond_json(auth_status())
             return
 
         if parsed.path == "/config":
             self.respond_json(
                 {
                     "ok": True,
-                    "auth": auth_status(),
                     "root": str(ROOT),
                     "configFile": str(CONFIG_FILE),
                     "songsFile": str(SONGS_FILE),

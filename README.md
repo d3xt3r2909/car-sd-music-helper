@@ -101,50 +101,6 @@ If your SD card has another name, change that value, then restart:
 launchctl kickstart -k gui/$(id -u)/com.nova.song-helper
 ```
 
-## Optional Login
-
-Do not put fixed credentials in `song_links.html`. This repository can be public, so anything in frontend code is visible and can be bypassed.
-
-Use local helper auth instead. Credentials live only in:
-
-```text
-~/Desktop/nova/nova_helper_config.json
-```
-
-Example:
-
-```json
-{
-  "auth": {
-    "enabled": true,
-    "username": "your-user",
-    "password": "your-password",
-    "api_token": "generate-a-long-random-token"
-  }
-}
-```
-
-Then restart:
-
-```bash
-launchctl kickstart -k gui/$(id -u)/com.nova.song-helper
-```
-
-When auth is enabled:
-
-- the page shows a login panel
-- `Remember me` stores the helper token in browser localStorage
-- without `Remember me`, the token is stored only for the browser session
-- helper APIs reject unauthenticated calls
-
-To generate a token:
-
-```bash
-python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
-```
-
-The `api_token` is also useful for the Chrome extension. Open extension options and paste the token there.
-
 ## Browser Page
 
 Open locally:
@@ -177,7 +133,7 @@ The page stores the helper URL in browser localStorage.
 
 ## Chrome Extension
 
-The Chrome extension is included in this repository at `add-to-songs-extension/`. It contains no credentials by default. If helper auth is enabled, store the helper token in the extension options on that computer.
+The Chrome extension is included in this repository at `add-to-songs-extension/`. It stores only the local helper URL in browser extension storage.
 
 Install the extension for the YouTube shortcut flow:
 
@@ -202,12 +158,6 @@ chrome://extensions/shortcuts
 ```
 
 and confirm they are assigned.
-
-If helper auth is enabled:
-
-1. Open extension details
-2. Click `Extension options`
-3. Paste the same `api_token` from `nova_helper_config.json`
 
 ## Normal Workflow
 
@@ -283,16 +233,6 @@ The helper includes CORS and Private Network Access headers. If the browser stil
 
 ```text
 ?helper=http://127.0.0.1:8765
-```
-
-### Login works on page but shortcuts show AUTH
-
-The page login token is stored in the page's browser storage. The Chrome extension has separate storage.
-
-Open extension options and paste `auth.api_token` from:
-
-```text
-~/Desktop/nova/nova_helper_config.json
 ```
 
 ## Safety Notes
